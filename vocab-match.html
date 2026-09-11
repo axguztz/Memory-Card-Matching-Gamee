@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>จับคู่คำศัพท์ — เกมฝึกความจำ &amp; คำศัพท์อังกฤษ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #16323F;
+    --bg-deep: #0F262F;
+    --panel: #1F4A5C;
+    --panel-edge: #2C617A;
+    --amber: #F2A65A;
+    --amber-deep: #D8853A;
+    --paper: #FDF6E9;
+    --ink: #16323F;
+    --sage: #7FB77E;
+    --coral: #E8604C;
+    --sky: #8FD3E8;
+    --muted: #B8D2DB;
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(242,166,90,0.10), transparent 40%),
+      radial-gradient(circle at 85% 85%, rgba(143,211,232,0.08), transparent 45%),
+      var(--bg);
+    font-family:'Sarabun', sans-serif;
+    color: var(--paper);
+    display:flex;
+    justify-content:center;
+    padding: 32px 16px 64px;
+  }
+
+  .app{
+    width:100%;
+    max-width: 780px;
+  }
+
+  header{
+    text-align:center;
+    margin-bottom: 28px;
+  }
+
+  header .kicker{
+    font-family:'Kanit', sans-serif;
+    font-size: 15px;
+    color: var(--sky);
+    font-weight:500;
+    margin: 0 0 6px;
+  }
+
+  h1{
+    font-family:'Kanit', sans-serif;
+    font-size: clamp(28px, 5vw, 40px);
+    font-weight:700;
+    margin: 0 0 10px;
+    line-height:1.2;
+  }
+
+  header p.lead{
+    color: var(--muted);
+    font-size: 16px;
+    max-width: 480px;
+    margin: 0 auto;
+    line-height:1.6;
+  }
+
+  .panel{
+    background: var(--panel);
+    border: 2px solid var(--panel-edge);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
+    justify-content:space-between;
+  }
+
+  .group-label{
+    font-family:'Kanit', sans-serif;
+    font-size: 13px;
+    color: var(--sky);
+    font-weight:500;
+    margin: 0 0 8px;
+  }
+
+  .chip-set{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+
+  .chip{
+    font-family:'Sarabun', sans-serif;
+    font-weight:600;
+    font-size: 14px;
+    padding: 9px 16px;
+    border-radius: 999px;
+    border: 2px solid var(--panel-edge);
+    background: transparent;
+    color: var(--paper);
+    cursor:pointer;
+    transition: background .15s ease, border-color .15s ease, transform .1s ease;
+  }
+
+  .chip:hover{ border-color: var(--amber); transform: translateY(-1px); }
+
+  .chip.active{
+    background: var(--amber);
+    border-color: var(--amber);
+    color: var(--ink);
+  }
+
+  .stat-bar{
+    display:flex;
+    gap: 14px;
+    flex-wrap:wrap;
+    margin-top: 16px;
+  }
+
+  .stat{
+    flex:1;
+    min-width: 110px;
+    background: var(--bg-deep);
+    border-radius: 14px;
+    padding: 12px 14px;
+    text-align:center;
+  }
+
+  .stat .num{
+    font-family:'Kanit', sans-serif;
+    font-size: 22px;
+    font-weight:700;
+    color: var(--amber);
+  }
+
+  .stat .label{
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .restart-btn{
+    font-family:'Kanit', sans-serif;
+    font-weight:600;
+    font-size: 15px;
+    padding: 12px 22px;
+    border-radius: 12px;
+    border: none;
+    background: var(--coral);
+    color: var(--paper);
+    cursor:pointer;
+    width:100%;
+    margin-top: 14px;
+    transition: filter .15s ease, transform .1s ease;
+  }
+  .restart-btn:hover{ filter: brightness(1.08); }
+  .restart-btn:active{ transform: scale(0.98); }
+
+  .board{
+    display:grid;
+    gap: 10px;
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  @media (min-width: 560px){
+    .board.pairs-8, .board.pairs-10{ grid-template-columns: repeat(5, 1fr); }
+  }
+
+  .card{
+    aspect-ratio: 3/4;
+    perspective: 800px;
+    cursor:pointer;
+  }
+
+  .card .inner{
+    position:relative;
+    width:100%;
+    height:100%;
+    transition: transform .45s cubic-bezier(.4,.2,.2,1);
+    transform-style: preserve-3d;
+  }
+
+  .card.flipped .inner, .card.matched .inner{
+    transform: rotateY(180deg);
+  }
+
+  .face{
+    position:absolute;
+    inset:0;
+    backface-visibility: hidden;
+    border-radius: 12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding: 6px;
+  }
+
+  .face.back{
+    background: var(--amber);
+    border: 2px solid var(--amber-deep);
+    font-size: clamp(20px, 5vw, 30px);
+  }
+
+  .face.front{
+    background: var(--paper);
+    color: var(--ink);
+    transform: rotateY(180deg);
+    border: 2px solid var(--amber-deep);
+    font-family:'Kanit', sans-serif;
+    font-weight:600;
+    font-size: clamp(12px, 3.4vw, 16px);
+    line-height:1.25;
+    word-break: break-word;
+  }
+
+  .card.matched .face.front{
+    background: #EAF6E9;
+    border-color: var(--sage);
+    color: #2E5B32;
+  }
+
+  .card.matched{
+    animation: pop .35s ease;
+  }
+
+  @keyframes pop{
+    0%{ transform: scale(1); }
+    40%{ transform: scale(1.06); }
+    100%{ transform: scale(1); }
+  }
+
+  .win-overlay{
+    position:fixed;
+    inset:0;
+    background: rgba(15,38,47,0.82);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding: 20px;
+    z-index: 10;
+  }
+
+  .win-overlay.show{ display:flex; }
+
+  .win-card{
+    background: var(--panel);
+    border: 2px solid var(--amber);
+    border-radius: 22px;
+    padding: 32px 28px;
+    text-align:center;
+    max-width: 360px;
+  }
+
+  .win-card .emoji{ font-size: 44px; margin-bottom: 6px; }
+
+  .win-card h2{
+    font-family:'Kanit', sans-serif;
+    font-size: 24px;
+    margin: 0 0 6px;
+  }
+
+  .win-card p{
+    color: var(--muted);
+    font-size: 14px;
+    margin: 0 0 18px;
+    line-height:1.6;
+  }
+
+  .win-card .best-badge{
+    display:inline-block;
+    background: rgba(127,183,126,0.18);
+    color: var(--sage);
+    font-size: 13px;
+    font-weight:600;
+    padding: 5px 12px;
+    border-radius: 999px;
+    margin-bottom: 16px;
+  }
+
+  .win-card button{
+    font-family:'Kanit', sans-serif;
+    font-weight:600;
+    font-size: 15px;
+    padding: 12px 24px;
+    border-radius: 12px;
+    border: none;
+    background: var(--amber);
+    color: var(--ink);
+    cursor:pointer;
+    width:100%;
+  }
+
+  footer{
+    text-align:center;
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 24px;
+    line-height:1.6;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .card .inner, .card.matched{ transition:none; animation:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <p class="kicker">เกมฝึกสมอง สำหรับทุกวัย</p>
+    <h1>จับคู่คำศัพท์</h1>
+    <p class="lead">พลิกการ์ดหาคู่คำศัพท์ภาษาอังกฤษกับคำแปลภาษาไทย ช่วยฝึกทั้งความจำและคำศัพท์ไปพร้อมกัน</p>
+  </header>
+
+  <div class="panel">
+    <div>
+      <p class="group-label">หมวดคำศัพท์</p>
+      <div class="chip-set" id="categoryChips"></div>
+    </div>
+    <div style="margin-top:16px;">
+      <p class="group-label">ระดับความยาก</p>
+      <div class="chip-set" id="difficultyChips"></div>
+    </div>
+
+    <div class="stat-bar">
+      <div class="stat"><div class="num" id="statTime">00:00</div><div class="label">เวลา</div></div>
+      <div class="stat"><div class="num" id="statMoves">0</div><div class="label">จำนวนครั้งที่พลิก</div></div>
+      <div class="stat"><div class="num" id="statPairs">0/0</div><div class="label">คู่ที่จับได้</div></div>
+      <div class="stat"><div class="num" id="statBest">—</div><div class="label">สถิติดีที่สุด</div></div>
+    </div>
+
+    <button class="restart-btn" id="restartBtn">เริ่มเกมใหม่</button>
+  </div>
+
+  <div class="board" id="board"></div>
+
+  <footer>เล่นซ้ำได้เรื่อยๆ การ์ดจะสลับตำแหน่งใหม่ทุกครั้ง เพื่อฝึกความจำอย่างต่อเนื่อง</footer>
+</div>
+
+<div class="win-overlay" id="winOverlay">
+  <div class="win-card">
+    <div class="emoji">🎉</div>
+    <h2>เก่งมาก!</h2>
+    <p id="winDetail">คุณจับคู่คำศัพท์ครบแล้ว</p>
+    <div class="best-badge" id="bestBadge" style="display:none;"></div>
+    <button id="playAgainBtn">เล่นอีกครั้ง</button>
+  </div>
+</div>
+
+<script>
+(function(){
+
+  const WORD_BANKS = {
+    animals: {
+      label: 'สัตว์', icon: '🐾',
+      words: [
+        ['Dog','สุนัข'], ['Cat','แมว'], ['Elephant','ช้าง'], ['Tiger','เสือ'],
+        ['Rabbit','กระต่าย'], ['Bird','นก'], ['Fish','ปลา'], ['Snake','งู'],
+        ['Horse','ม้า'], ['Frog','กบ'], ['Bear','หมี'], ['Monkey','ลิง']
+      ]
+    },
+    fruits: {
+      label: 'ผลไม้', icon: '🍉',
+      words: [
+        ['Apple','แอปเปิ้ล'], ['Banana','กล้วย'], ['Mango','มะม่วง'], ['Grape','องุ่น'],
+        ['Orange','ส้ม'], ['Watermelon','แตงโม'], ['Pineapple','สับปะรด'], ['Strawberry','สตรอว์เบอร์รี'],
+        ['Papaya','มะละกอ'], ['Coconut','มะพร้าว'], ['Lemon','มะนาว'], ['Durian','ทุเรียน']
+      ]
+    },
+    colors: {
+      label: 'สี', icon: '🎨',
+      words: [
+        ['Red','แดง'], ['Blue','น้ำเงิน'], ['Green','เขียว'], ['Yellow','เหลือง'],
+        ['Purple','ม่วง'], ['Pink','ชมพู'], ['Black','ดำ'], ['White','ขาว'],
+        ['Brown','น้ำตาล'], ['Gray','เทา'], ['Gold','ทอง'], ['Orange','ส้ม']
+      ]
+    },
+    numbers: {
+      label: 'ตัวเลข', icon: '🔢',
+      words: [
+        ['One','หนึ่ง'], ['Two','สอง'], ['Three','สาม'], ['Four','สี่'],
+        ['Five','ห้า'], ['Six','หก'], ['Seven','เจ็ด'], ['Eight','แปด'],
+        ['Nine','เก้า'], ['Ten','สิบ'], ['Eleven','สิบเอ็ด'], ['Twelve','สิบสอง']
+      ]
+    }
+  };
+
+  const DIFFICULTIES = [
+    { key:'easy',   label:'ง่าย (6 คู่)',   pairs:6 },
+    { key:'medium', label:'ปานกลาง (8 คู่)', pairs:8 },
+    { key:'hard',   label:'ยาก (10 คู่)',   pairs:10 }
+  ];
+
+  let state = {
+    category: 'animals',
+    difficulty: 'easy',
+    cards: [],
+    flipped: [],
+    matchedCount: 0,
+    moves: 0,
+    seconds: 0,
+    timerId: null,
+    started: false,
+    locked: false
+  };
+
+  const boardEl = document.getElementById('board');
+  const categoryChipsEl = document.getElementById('categoryChips');
+  const difficultyChipsEl = document.getElementById('difficultyChips');
+  const statTimeEl = document.getElementById('statTime');
+  const statMovesEl = document.getElementById('statMoves');
+  const statPairsEl = document.getElementById('statPairs');
+  const statBestEl = document.getElementById('statBest');
+  const winOverlay = document.getElementById('winOverlay');
+  const winDetail = document.getElementById('winDetail');
+  const bestBadge = document.getElementById('bestBadge');
+
+  function bestKey(){
+    return 'vocabmatch_best_' + state.category + '_' + state.difficulty;
+  }
+
+  function getBest(){
+    try{
+      const raw = localStorage.getItem(bestKey());
+      return raw ? JSON.parse(raw) : null;
+    }catch(e){ return null; }
+  }
+
+  function setBestIfBetter(seconds, moves){
+    const current = getBest();
+    if(!current || seconds < current.seconds || (seconds === current.seconds && moves < current.moves)){
+      try{
+        localStorage.setItem(bestKey(), JSON.stringify({seconds, moves}));
+      }catch(e){ /* ignore storage errors */ }
+      return true;
+    }
+    return false;
+  }
+
+  function formatTime(s){
+    const m = Math.floor(s/60).toString().padStart(2,'0');
+    const sec = (s%60).toString().padStart(2,'0');
+    return m + ':' + sec;
+  }
+
+  function renderChips(){
+    categoryChipsEl.innerHTML = '';
+    Object.keys(WORD_BANKS).forEach(key=>{
+      const bank = WORD_BANKS[key];
+      const btn = document.createElement('button');
+      btn.className = 'chip' + (state.category === key ? ' active' : '');
+      btn.textContent = bank.icon + ' ' + bank.label;
+      btn.addEventListener('click', ()=>{
+        state.category = key;
+        renderChips();
+        startGame();
+      });
+      categoryChipsEl.appendChild(btn);
+    });
+
+    difficultyChipsEl.innerHTML = '';
+    DIFFICULTIES.forEach(d=>{
+      const btn = document.createElement('button');
+      btn.className = 'chip' + (state.difficulty === d.key ? ' active' : '');
+      btn.textContent = d.label;
+      btn.addEventListener('click', ()=>{
+        state.difficulty = d.key;
+        renderChips();
+        startGame();
+      });
+      difficultyChipsEl.appendChild(btn);
+    });
+  }
+
+  function shuffle(arr){
+    for(let i = arr.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i+1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function buildDeck(){
+    const bank = WORD_BANKS[state.category];
+    const pairCount = DIFFICULTIES.find(d=>d.key === state.difficulty).pairs;
+    const chosen = shuffle(bank.words.slice()).slice(0, pairCount);
+
+    let deck = [];
+    chosen.forEach((pair, idx)=>{
+      deck.push({ id: idx + '-en', pairId: idx, text: pair[0], lang:'en' });
+      deck.push({ id: idx + '-th', pairId: idx, text: pair[1], lang:'th' });
+    });
+    return shuffle(deck);
+  }
+
+  function stopTimer(){
+    if(state.timerId){ clearInterval(state.timerId); state.timerId = null; }
+  }
+
+  function startTimer(){
+    stopTimer();
+    state.timerId = setInterval(()=>{
+      state.seconds += 1;
+      statTimeEl.textContent = formatTime(state.seconds);
+    }, 1000);
+  }
+
+  function startGame(){
+    stopTimer();
+    winOverlay.classList.remove('show');
+
+    state.cards = buildDeck();
+    state.flipped = [];
+    state.matchedCount = 0;
+    state.moves = 0;
+    state.seconds = 0;
+    state.started = false;
+    state.locked = false;
+
+    const pairCount = DIFFICULTIES.find(d=>d.key === state.difficulty).pairs;
+    statTimeEl.textContent = '00:00';
+    statMovesEl.textContent = '0';
+    statPairsEl.textContent = '0/' + pairCount;
+
+    const best = getBest();
+    statBestEl.textContent = best ? (formatTime(best.seconds) + ' · ' + best.moves + ' ครั้ง') : '—';
+
+    boardEl.className = 'board pairs-' + pairCount;
+    boardEl.innerHTML = '';
+
+    const bankIcon = WORD_BANKS[state.category].icon;
+
+    state.cards.forEach(cardData=>{
+      const cardEl = document.createElement('div');
+      cardEl.className = 'card';
+      cardEl.dataset.id = cardData.id;
+
+      cardEl.innerHTML =
+        '<div class="inner">' +
+          '<div class="face back">' + bankIcon + '</div>' +
+          '<div class="face front">' + cardData.text + '</div>' +
+        '</div>';
+
+      cardEl.addEventListener('click', ()=> onCardClick(cardEl, cardData));
+      boardEl.appendChild(cardEl);
+    });
+  }
+
+  function onCardClick(cardEl, cardData){
+    if(state.locked) return;
+    if(cardEl.classList.contains('flipped') || cardEl.classList.contains('matched')) return;
+    if(state.flipped.length === 2) return;
+
+    if(!state.started){
+      state.started = true;
+      startTimer();
+    }
+
+    cardEl.classList.add('flipped');
+    state.flipped.push({ el: cardEl, data: cardData });
+
+    if(state.flipped.length === 2){
+      state.moves += 1;
+      statMovesEl.textContent = state.moves;
+      state.locked = true;
+
+      const [a, b] = state.flipped;
+      const isMatch = a.data.pairId === b.data.pairId;
+
+      if(isMatch){
+        setTimeout(()=>{
+          a.el.classList.add('matched');
+          b.el.classList.add('matched');
+          state.matchedCount += 1;
+          const pairCount = DIFFICULTIES.find(d=>d.key === state.difficulty).pairs;
+          statPairsEl.textContent = state.matchedCount + '/' + pairCount;
+          state.flipped = [];
+          state.locked = false;
+
+          if(state.matchedCount === pairCount){
+            finishGame();
+          }
+        }, 350);
+      }else{
+        setTimeout(()=>{
+          a.el.classList.remove('flipped');
+          b.el.classList.remove('flipped');
+          state.flipped = [];
+          state.locked = false;
+        }, 800);
+      }
+    }
+  }
+
+  function finishGame(){
+    stopTimer();
+    const isNewBest = setBestIfBetter(state.seconds, state.moves);
+    const best = getBest();
+
+    winDetail.textContent = 'ใช้เวลา ' + formatTime(state.seconds) + ' และพลิกการ์ด ' + state.moves + ' ครั้ง';
+
+    if(isNewBest){
+      bestBadge.style.display = 'inline-block';
+      bestBadge.textContent = '🏆 สถิติใหม่!';
+    }else{
+      bestBadge.style.display = 'inline-block';
+      bestBadge.textContent = 'สถิติดีที่สุด: ' + formatTime(best.seconds) + ' · ' + best.moves + ' ครั้ง';
+    }
+
+    statBestEl.textContent = formatTime(best.seconds) + ' · ' + best.moves + ' ครั้ง';
+
+    setTimeout(()=> winOverlay.classList.add('show'), 300);
+  }
+
+  document.getElementById('restartBtn').addEventListener('click', startGame);
+  document.getElementById('playAgainBtn').addEventListener('click', startGame);
+
+  renderChips();
+  startGame();
+})();
+</script>
+
+</body>
+</html>
